@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Charlie — The Shadow of the Forest | GNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void:#06080a;
+    --bg-panel:#0e1512;
+    --bg-panel-2:#121c17;
+    --forest-line:#22301f;
+    --gold:#e0a83f;
+    --gold-bright:#f7cf7c;
+    --gold-dim:#8a6c2e;
+    --blood:#8f3230;
+    --mist:#cfd6c8;
+    --text-main:#ece7d8;
+    --text-muted:#8b9285;
+    --shadow-deep: 0 20px 60px rgba(0,0,0,.6);
+    --serif: 'Cinzel', serif;
+    --body: 'Jost', sans-serif;
+    --mono: 'Space Mono', monospace;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    background:var(--bg-void);
+    color:var(--text-main);
+    font-family:var(--body);
+    height:100%;
+    overflow-x:hidden;
+  }
+
+  #bg-music-toggle{
+  position:fixed; top:14px; right:14px; z-index:50;
+  width:38px; height:38px; border-radius:50%;
+  background:rgba(6,8,10,.6); border:1px solid rgba(224,168,63,.4);
+  color:#f7cf7c; font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(4px);
+  transition:all .2s ease;
+}
+#bg-music-toggle:hover{ border-color:#e0a83f; }
+
+  body{
+    min-height:100vh;
+    position:relative;
+  }
+
+
+  /* ambient drifting mist, shared across screens */
+  .fog{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(34,48,31,.35), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 80% 20%, rgba(20,28,22,.4), transparent 60%);
+    animation: drift 22s ease-in-out infinite alternate;
+  }
+  @keyframes drift{
+    0%{ transform: translate(0,0) scale(1); }
+    100%{ transform: translate(-2%, -3%) scale(1.05); }
+  }
+
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .screen{
+    position:relative; z-index:2;
+    min-height:100vh;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:32px 20px 48px;
+    text-align:center;
+  }
+  .screen.active{ display:flex; }
+  .screen.fade-in{ animation: fadeIn .9s ease both; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---- signature element: glowing eyes in the dark ---- */
+  .eyes{ display:flex; gap:34px; justify-content:center; align-items:center; filter:drop-shadow(0 0 14px rgba(224,168,63,.55)); }
+  .eyes.small{ gap:18px; }
+  .eye{
+    width:30px; height:16px; border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, var(--gold-bright), var(--gold) 55%, #7a5b1f 100%);
+    animation: blink 2.5s ease-in-out infinite;
+  }
+  .eyes.small .eye{ width:14px; height:8px; }
+  .eye.right{ animation-delay:.15s; }
+  @keyframes blink{
+    0%, 88%, 100%{ transform:scaleY(1); opacity:1; }
+    92%{ transform:scaleY(.08); opacity:.7; }
+    94%{ transform:scaleY(1); opacity:1; }
+  }
+
+  /* =============== SCREEN 1 : TITLE =============== */
+  #screen-title .eyes{ margin-bottom:26px; }
+  .eyebrow{
+    font-family:var(--mono); letter-spacing:.35em; text-transform:uppercase;
+    color:var(--gold-dim); font-size:11px; margin-bottom:14px;
+  }
+  .title-word{
+    font-family:var(--serif); font-weight:800;
+    font-size:clamp(52px, 15vw, 108px);
+    letter-spacing:.06em;
+    line-height:.95;
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold) 55%, var(--gold-dim));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 0 40px rgba(224,168,63,.15);
+  }
+  .subtitle{
+    font-family:var(--serif); font-weight:600; letter-spacing:.18em; text-transform:uppercase;
+    font-size:clamp(13px,3.4vw,17px); color:var(--mist); margin-top:10px; opacity:.85;
+  }
+  .tagline{
+    max-width:480px; margin:26px auto 8px; color:var(--text-muted);
+    font-size:15px; line-height:1.7; font-style:italic;
+  }
+  .btn{
+    font-family:var(--body); font-weight:600; font-size:15px; letter-spacing:.03em;
+    color:var(--bg-void); background:linear-gradient(180deg,var(--gold-bright),var(--gold));
+    border:none; padding:16px 34px; border-radius:2px; cursor:pointer;
+    box-shadow:0 10px 30px rgba(224,168,63,.25);
+    transition:transform .2s ease, box-shadow .2s ease;
+    text-transform:uppercase; letter-spacing:.12em;
+  }
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 14px 36px rgba(224,168,63,.35); }
+  .btn:active{ transform:translateY(0); }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-ghost{
+    background:transparent; color:var(--gold); border:1px solid var(--gold-dim);
+    box-shadow:none; margin-top:14px; font-size:12px; padding:11px 22px;
+  }
+  .btn-ghost:hover{ border-color:var(--gold); box-shadow:0 0 20px rgba(224,168,63,.12); }
+
+  .cta-wrap{ margin-top:34px; }
+
+  /* =============== SCREEN 2 : STORY =============== */
+  .panel{
+    width:100%; max-width:520px;
+    background:linear-gradient(180deg, var(--bg-panel), var(--bg-panel-2));
+    border:1px solid var(--forest-line);
+    border-radius:4px; padding:26px 22px 30px;
+    box-shadow:var(--shadow-deep);
+  }
+  .kicker{
+    font-family:var(--serif); font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    font-size:13px; color:var(--gold); margin-bottom:4px;
+  }
+  .panel-title{
+    font-family:var(--serif); font-size:26px; font-weight:700; color:var(--text-main); margin-bottom:18px;
+  }
+
+  .photo-frame{
+    position:relative; width:100%; aspect-ratio:4/3; border-radius:3px; overflow:hidden;
+    background:#0a0d0a; border:1px solid var(--forest-line);
+    box-shadow: inset 0 0 40px rgba(0,0,0,.6);
+  }
+  .photo-frame img{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    opacity:0; transition:opacity 1.1s ease;
+    filter:saturate(.85) contrast(1.05) brightness(.9);
+  }
+  .photo-frame img.show{ opacity:1; }
+  .photo-frame .placeholder{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; opacity:0; transition:opacity 1.1s ease; color:var(--text-muted);
+  }
+  .photo-frame .placeholder.show{ opacity:1; }
+  .photo-frame .placeholder span{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+  .photo-tag{
+    position:absolute; left:10px; bottom:10px; font-family:var(--mono); font-size:10px;
+    letter-spacing:.08em; color:var(--gold-bright); background:rgba(6,8,10,.55);
+    padding:4px 8px; border:1px solid rgba(224,168,63,.35); border-radius:2px; z-index:3;
+  }
+  .frame-corner{ position:absolute; width:16px; height:16px; border:1.5px solid var(--gold-dim); z-index:3; opacity:.8; }
+  .frame-corner.tl{ top:6px; left:6px; border-right:none; border-bottom:none; }
+  .frame-corner.tr{ top:6px; right:6px; border-left:none; border-bottom:none; }
+  .frame-corner.bl{ bottom:6px; left:6px; border-right:none; border-top:none; }
+  .frame-corner.br{ bottom:6px; right:6px; border-left:none; border-top:none; }
+
+  .audio-ui{ margin-top:20px; }
+  .audio-controls{ display:flex; align-items:center; gap:12px; }
+  .play-btn{
+    flex:0 0 auto; width:46px; height:46px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold));
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 18px rgba(224,168,63,.3);
+  }
+  .play-btn svg{ width:16px; height:16px; }
+  .scrub-wrap{ flex:1; display:flex; flex-direction:column; gap:5px; }
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:4px; border-radius:2px;
+    background:var(--forest-line); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:13px; height:13px; border-radius:50%;
+    background:var(--gold-bright); cursor:pointer; box-shadow:0 0 8px rgba(224,168,63,.6);
+    margin-top:-4.5px;
+  }
+  input[type=range]::-webkit-slider-runnable-track{ height:4px; border-radius:2px; background:var(--forest-line); }
+  input[type=range]::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%; background:var(--gold-bright); border:none; cursor:pointer;
+  }
+  .time-row{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:10px; color:var(--text-muted); }
+  .vol-row{ display:flex; align-items:center; gap:8px; margin-top:14px; }
+  .vol-row svg{ width:14px; height:14px; flex:0 0 auto; color:var(--text-muted); }
+  .vol-row input[type=range]{ width:90px; }
+
+  #vol{ --vol-color:#c0392b; background:var(--forest-line); }
+  #vol::-webkit-slider-runnable-track{ background:var(--forest-line); }
+  #vol::-webkit-slider-thumb{ background:var(--vol-color); box-shadow:0 0 8px var(--vol-color); }
+  #vol::-moz-range-thumb{ background:var(--vol-color); }
+  #vol::-moz-range-progress{ background:var(--vol-color); }
+  .replay-hint{ font-size:11.5px; color:var(--text-muted); margin-top:14px; line-height:1.6; }
+
+  .story-continue{ margin-top:24px; }
+  .continue-note{ font-size:11px; color:var(--text-muted); margin-top:10px; letter-spacing:.02em; }
+
+  /* =============== SCREEN 3 : HANGMAN =============== */
+  .game-clue{
+    font-family:var(--serif); font-size:17px; line-height:1.55; color:var(--text-main);
+    margin:14px 0 22px; max-width:440px;
+  }
+  .watchers{
+    display:flex; gap:10px; justify-content:center; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .watcher-slot{
+    width:34px; height:20px; border-radius:50%;
+    background:#101512; border:1px dashed var(--forest-line);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .watcher-slot .eyes.small{ opacity:0; transform:scale(.6); transition:all .35s ease; filter:none; gap:8px; }
+  .watcher-slot .eyes.small .eye{ width:9px; height:6px; animation:none; }
+  .watcher-slot.lit .eyes.small{ opacity:1; transform:scale(1); filter:drop-shadow(0 0 6px rgba(224,168,63,.8)); }
+  .watchers-caption{ font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); margin:-6px 0 20px; }
+
+  .word-blanks{
+    display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:26px;
+  }
+  .letter-slot{
+    width:30px; height:38px; border-bottom:2px solid var(--gold-dim);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--serif); font-size:22px; font-weight:700; color:var(--gold-bright);
+  }
+
+  .keyboard{
+    display:grid; grid-template-columns:repeat(7, 1fr); gap:7px; max-width:420px; margin:0 auto;
+  }
+  .key{
+    font-family:var(--mono); font-weight:700; font-size:13px;
+    background:var(--bg-panel-2); border:1px solid var(--forest-line); color:var(--text-main);
+    padding:10px 0; border-radius:3px; cursor:pointer; transition:all .15s ease;
+  }
+  .key:hover:not(:disabled){ border-color:var(--gold); color:var(--gold-bright); }
+  .key:disabled{ opacity:.25; cursor:default; }
+  .key.correct{ background:rgba(224,168,63,.18); border-color:var(--gold); color:var(--gold-bright); }
+  .key.wrong{ background:rgba(143,50,48,.22); border-color:var(--blood); color:#c98a86; }
+
+  .game-status{ margin-top:22px; min-height:20px; font-family:var(--mono); font-size:12px; letter-spacing:.05em; color:var(--text-muted); }
+  .game-status.win{ color:var(--gold-bright); }
+  .game-status.lose{ color:#c98a86; }
+
+  /* =============== SCREEN 4 : BADGE =============== */
+  .walla{
+    font-family:var(--serif); font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+    font-size:13px; color:var(--gold); margin-bottom:10px;
+  }
+  .badge-medal{ width:190px; height:190px; margin:10px auto 22px; position:relative; }
+  .badge-title{
+    font-family:var(--serif); font-weight:800; font-size:clamp(26px,7vw,36px);
+    color:var(--gold-bright); margin-bottom:8px; line-height:1.15;
+  }
+  .badge-sub{ max-width:400px; margin:0 auto; color:var(--text-muted); font-size:14px; line-height:1.7; }
+  .badge-word{ font-family:var(--mono); color:var(--gold-bright); letter-spacing:.05em; }
+  .particles{ position:absolute; inset:-40px; pointer-events:none; }
+  .particle{
+    position:absolute; width:3px; height:3px; border-radius:50%; background:var(--gold-bright);
+    box-shadow:0 0 6px rgba(224,168,63,.9); animation:floatUp linear infinite;
+  }
+  @keyframes floatUp{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:1; }
+    100%{ transform:translateY(-140px) translateX(var(--dx,0px)); opacity:0; }
+  }
+  .scan-note{ margin-top:30px; font-size:10.5px; color:var(--text-muted); font-family:var(--mono); letter-spacing:.04em; }
+
+  footer.tag{
+    position:fixed; bottom:10px; left:0; right:0; text-align:center; z-index:2;
+    font-family:var(--mono); font-size:9.5px; letter-spacing:.15em; text-transform:uppercase; color:#4a4f45;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .fog, .eye, .particle{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<audio id="bg-music" src="forest2.mp3" loop preload="auto"></audio>
+<button id="bg-music-toggle" aria-label="Toggle background music">🔊</button>
+
+
+<div class="fog"></div>
+<div class="grain"></div>
+
+<!-- ================= SCREEN 1: TITLE ================= -->
+<section id="screen-title" class="screen active">
+  <div class="eyes"><div class="eye left"></div><div class="eye right"></div></div>
+  <div class="eyebrow">Genting Nature Adventure</div>
+  <h1 class="title-word">CHARLIE</h1>
+  <p class="subtitle">The Shadow of the Forest</p>
+  <p class="tagline">For years he was only a whisper among the trees. Some say he still watches the trail today. Do you want to know his story?</p>
+  <div class="cta-wrap">
+    <button class="btn" id="btn-start">Uncover His Story</button>
+  </div>
+</section>
+
+<!-- ================= SCREEN 2: STORY ================= -->
+<section id="screen-story" class="screen">
+  <div class="panel">
+    <div class="kicker">Charlie's story...</div>
+   
+
+    <div class="photo-frame" id="photo-frame">
+      <div class="frame-corner tl"></div><div class="frame-corner tr"></div>
+      <div class="frame-corner bl"></div><div class="frame-corner br"></div>
+
+      <img src = "charlie1.jpg">
+      <div class="placeholder" data-idx="0" data-fallback-for="0">
+       
+      </div>
+
+      <img src="charlie2.jpg">
+     <div class="placeholder" data-idx="1" data-fallback-for="1">
+      
+      </div>
+
+      <img src="charlie3.jpg">
+      <div class="placeholder" data-idx="2" data-fallback-for="2">
+       
+      </div>
+
+      <img src="charlie4.jpg">
+      <div class="placeholder" data-idx="3" data-fallback-for="3">
+      
+      </div>
+
+      <img src="charlie5.jpg">
+      <div class="placeholder" data-idx="4" data-fallback-for="4">
+      
+      </div>
+
+      <img src="charlie6.jpg">
+      <div class="placeholder" data-idx="5" data-fallback-for="5">
+      
+      </div>
+
+
+      
+    </div>
+
+    <div class="audio-ui">
+      <audio id="story-audio" src="Charlie_Final.mp3"></audio>
+      <div class="audio-controls">
+        <button class="play-btn" id="play-btn" aria-label="Play story audio">
+          <svg id="play-icon" viewBox="0 0 24 24" fill="#06080a"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="pause-icon" viewBox="0 0 24 24" fill="#06080a" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </button>
+        <div class="scrub-wrap">
+          <input type="range" id="scrub" value="0" min="0" max="100" step="0.1">
+          <div class="time-row"><span id="time-cur">0:00</span><span id="time-dur">0:00</span></div>
+        </div>
+      </div>
+      <div class="vol-row">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3z"/></svg>
+        <input type="range" id="vol" min="0" max="1" step="0.01" value="1">
+      </div>
+      <p class="replay-hint">Missed a word? Drag the slider back and listen again — Charlie's story doesn't rush.</p>
+    </div>
+
+    <div class="story-continue">
+      <button class="btn" id="btn-to-game" disabled>Track His Trail</button>
+      <p class="continue-note" id="continue-note">Finish listening to unlock the trail ahead</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SCREEN 3: HANGMAN ================= -->
+<section id="screen-game" class="screen">
+  <div class="panel">
+    <div class="kicker">One Trail, One Question</div>
+    <div class="panel-title">What Do You Remember?</div>
+
+    <p class="game-clue" id="game-clue">Loading a question from Charlie's story…</p>
+
+    <div class="watchers" id="watchers"></div>
+    <p class="watchers-caption">eyes in the dark · each wrong guess wakes one</p>
+
+    <div class="word-blanks" id="word-blanks"></div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <p class="game-status" id="game-status"></p>
+  </div>
+</section>
+
+<!-- ================= SCREEN 4: DONE ================= -->
+<section id="screen-badge" class="screen">
+  <div class="eyes"><div class="eye left"></div><div class="eye right"></div></div>
+  <h2 class="badge-title" style="margin-top:22px;">Well Done!</h2>
+  <p class="badge-sub">You've uncovered Charlie's story and remembered his trail.</p>
+  <div class="cta-wrap">
+    <button class="btn btn-ghost" id="btn-replay">Hear the Story Again</button>
+  </div>
+</section>
+
+<footer class="tag">Created by · Bhavatharni Gopi Krishnan</footer>
+
+<script>
+(function(){
+
+  /* ---------- navigation ---------- */
+  const screens = ['screen-title','screen-story','screen-game','screen-badge'];
+  function show(id){
+    screens.forEach(s=>{
+      const el = document.getElementById(s);
+      el.classList.remove('active','fade-in');
+    });
+    const target = document.getElementById(id);
+    target.classList.add('active');
+    requestAnimationFrame(()=> target.classList.add('fade-in'));
+  }
+
+  document.getElementById('btn-start').addEventListener('click', ()=>{
+    show('screen-story');
+  });
+
+  /* ---------- photo crossfade ---------- */
+  const imgs = Array.from(document.querySelectorAll('#photo-frame img'));
+  const placeholders = Array.from(document.querySelectorAll('#photo-frame .placeholder'));
+  
+  let photoIdx = 0;
+
+  imgs.forEach(img=>{
+    img.addEventListener('error', ()=>{ img.dataset.broken = '1'; updatePhoto(); });
+    img.addEventListener('load', ()=>{ img.dataset.broken = '0'; updatePhoto(); });
+  });
+
+  const bgMusic = document.getElementById('bg-music');
+const bgToggle = document.getElementById('bg-music-toggle');
+bgMusic.volume = 0.35; // keep it subtle
+
+let musicStarted = false;
+function startBgMusic(){
+  if(musicStarted) return;
+  musicStarted = true;
+  bgMusic.play().catch(()=>{});
+}
+// browsers block autoplay with sound until the user clicks something —
+// this unlocks it on the very first tap anywhere on the page
+document.addEventListener('click', startBgMusic, { once:true });
+
+bgToggle.addEventListener('click', ()=>{
+  if(bgMusic.paused){ bgMusic.play(); bgToggle.textContent = '🔊'; }
+  else { bgMusic.pause(); bgToggle.textContent = '🔇'; }
+});
+
+// duck the background music down when Charlie's story narration plays,
+// so they don't fight each other
+const storyAudio = document.getElementById('story-audio');
+if(storyAudio){
+  storyAudio.addEventListener('play', ()=> bgMusic.volume = 0.12);
+  storyAudio.addEventListener('pause', ()=> bgMusic.volume = 0.35);
+  storyAudio.addEventListener('ended', ()=> bgMusic.volume = 0.35);
+}
+
+  function updatePhoto(){
+    imgs.forEach((img,i)=>{
+      const active = i === photoIdx && img.dataset.broken !== '1';
+      img.classList.toggle('show', active);
+    });
+    placeholders.forEach((p,i)=>{
+      const correspondingImg = imgs[i];
+      const showPh = i === photoIdx && (correspondingImg.dataset.broken === '1' || correspondingImg.dataset.broken === undefined);
+      p.classList.toggle('show', showPh);
+    });
+  
+  }
+  updatePhoto();
+  setInterval(()=>{ photoIdx = (photoIdx+1) % imgs.length; updatePhoto(); }, 7000);
+
+  /* ---------- audio controls ---------- */
+  const audio = document.getElementById('story-audio');
+  const playBtn = document.getElementById('play-btn');
+  const playIcon = document.getElementById('play-icon');
+  const pauseIcon = document.getElementById('pause-icon');
+  const scrub = document.getElementById('scrub');
+  const timeCur = document.getElementById('time-cur');
+  const timeDur = document.getElementById('time-dur');
+  const vol = document.getElementById('vol');
+  const btnToGame = document.getElementById('btn-to-game');
+  const continueNote = document.getElementById('continue-note');
+
+  function fmt(t){
+    if(!isFinite(t)) return '0:00';
+    const m = Math.floor(t/60), s = Math.floor(t%60);
+    return m + ':' + (s<10?'0':'') + s;
+  }
+
+  audio.addEventListener('loadedmetadata', ()=>{
+    scrub.max = audio.duration || 100;
+    timeDur.textContent = fmt(audio.duration);
+  });
+  audio.addEventListener('timeupdate', ()=>{
+    scrub.value = audio.currentTime;
+    timeCur.textContent = fmt(audio.currentTime);
+  });
+  audio.addEventListener('play', ()=>{ playIcon.style.display='none'; pauseIcon.style.display='block'; });
+  audio.addEventListener('pause', ()=>{ playIcon.style.display='block'; pauseIcon.style.display='none'; });
+  audio.addEventListener('ended', ()=>{
+    btnToGame.disabled = false;
+    continueNote.textContent = 'You may replay anytime, or continue to the trail';
+  });
+  audio.addEventListener('error', ()=>{
+    continueNote.textContent = 'Audio file not found yet — add charlie-story.mp3 alongside this file';
+  });
+
+  playBtn.addEventListener('click', ()=>{
+    if(audio.paused){ audio.play().catch(()=>{ continueNote.textContent = 'Add charlie-story.mp3 to hear Charlie\'s story'; }); }
+    else { audio.pause(); }
+  });
+  scrub.addEventListener('input', ()=>{ audio.currentTime = scrub.value; });
+
+  function updateVolColor(){
+    const t = parseFloat(vol.value); // 0 to 1
+    // interpolate red (#c0392b) -> green (#2ecc71)
+    const r1=192,g1=57,b1=43, r2=46,g2=204,b2=113;
+    const r = Math.round(r1 + (r2-r1)*t);
+    const g = Math.round(g1 + (g2-g1)*t);
+    const b = Math.round(b1 + (b2-b1)*t);
+    vol.style.setProperty('--vol-color', `rgb(${r},${g},${b})`);
+    const pct = t*100;
+    vol.style.background = `linear-gradient(to right, rgb(${r},${g},${b}) ${pct}%, var(--forest-line) ${pct}%)`;
+  }
+  vol.addEventListener('input', updateVolColor);
+  updateVolColor();
+
+  vol.addEventListener('input', ()=>{ audio.volume = vol.value; });
+
+  document.getElementById('btn-to-game').addEventListener('click', ()=>{
+    audio.pause();
+    show('screen-game');
+    startHangman();
+  });
+
+  /* ---------- hangman ---------- */
+  const QUESTIONS = [
+    { word:'CHARLIE',    clue:'What name did people give the black panther of Genting?' },
+    { word:'SHADOW',     clue:'"The ___ of the Forest" — Charlie\'s other name.' },
+    { word:'NATURALIST', clue:'Who camped nearby and first spotted two glowing eyes in the dark?' },
+    { word:'YELLOW',     clue:'What colour were the eyes watching from the darkness?' },
+    { word:'SKYWAY',     clue:'Which cable car did visitors ride when they filmed the black cat in 2023?' },
+    { word:'ANDREA',     clue:'What is the name of the female black panther Charlie searches for?' },
+    { word:'BREEDING',   clue:'During which season does Charlie risk crossing busy roads?' },
+    { word:'TERRITORY',  clue:'Andrea lives beyond Charlie\'s own ___.' },
+    { word:'MYTH',       clue:'Before proof surfaced, some believed Charlie was only a ___.' },
+    { word:'GROWLS',     clue:'What echoed through the forest the morning after the naturalist\'s sighting?' }
+  ];
+
+  const MAX_WRONG = 6;
+  let current, guessed, wrong;
+
+  function pickQuestion(){
+    let lastIdx = localStorage.getItem('charlie_last_q');
+    let idx;
+    do { idx = Math.floor(Math.random() * QUESTIONS.length); }
+    while (QUESTIONS.length > 1 && String(idx) === lastIdx);
+    localStorage.setItem('charlie_last_q', idx);
+    return QUESTIONS[idx];
+  }
+
+  function buildWatchers(){
+    const wrap = document.getElementById('watchers');
+    wrap.innerHTML = '';
+    for(let i=0;i<MAX_WRONG;i++){
+      const slot = document.createElement('div');
+      slot.className = 'watcher-slot';
+      slot.id = 'watcher-'+i;
+      slot.innerHTML = '<div class="eyes small"><div class="eye left"></div><div class="eye right"></div></div>';
+      wrap.appendChild(slot);
+    }
+  }
+
+  function buildBlanks(){
+    const wrap = document.getElementById('word-blanks');
+    wrap.innerHTML = '';
+    current.word.split('').forEach((ch,i)=>{
+      const slot = document.createElement('div');
+      slot.className = 'letter-slot';
+      slot.id = 'slot-'+i;
+      slot.textContent = '';
+      wrap.appendChild(slot);
+    });
+  }
+
+  function buildKeyboard(){
+    const wrap = document.getElementById('keyboard');
+    wrap.innerHTML = '';
+    'QWERTYUIOPASDFGHJKLZXCVBNM'.split('').forEach(letter=>{
+      const btn = document.createElement('button');
+      btn.className = 'key';
+      btn.textContent = letter;
+      btn.id = 'key-'+letter;
+      btn.addEventListener('click', ()=> guessLetter(letter));
+      wrap.appendChild(btn);
+    });
+  }
+
+  function guessLetter(letter){
+    if(guessed.has(letter)) return;
+    guessed.add(letter);
+    const key = document.getElementById('key-'+letter);
+    key.disabled = true;
+
+    if(current.word.includes(letter)){
+      key.classList.add('correct');
+      current.word.split('').forEach((ch,i)=>{
+        if(ch === letter) document.getElementById('slot-'+i).textContent = ch;
+      });
+      checkWin();
+    } else {
+      key.classList.add('wrong');
+      const slot = document.getElementById('watcher-'+wrong);
+      if(slot) slot.classList.add('lit');
+      wrong++;
+      if(wrong >= MAX_WRONG) loseGame();
+    }
+  }
+
+  function checkWin(){
+    const allRevealed = current.word.split('').every(ch => guessed.has(ch));
+    if(allRevealed){
+      document.getElementById('game-status').textContent = "You remembered his trail...";
+      document.getElementById('game-status').className = 'game-status win';
+      document.querySelectorAll('#keyboard .key').forEach(k=> k.disabled = true);
+      setTimeout(()=>{ show('screen-badge'); }, 1400);
+    }
+  }
+
+  function loseGame(){
+    document.getElementById('game-status').innerHTML = 'He\'s watching... the answer was <strong style="color:var(--gold-bright)">' + current.word + '</strong>';
+    document.getElementById('game-status').className = 'game-status lose';
+    document.querySelectorAll('#keyboard .key').forEach(k=> k.disabled = true);
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn btn-ghost';
+    retryBtn.textContent = 'Try Again';
+    retryBtn.style.marginTop = '16px';
+    retryBtn.addEventListener('click', startHangman, { once:true });
+    document.getElementById('game-status').after(retryBtn);
+  }
+
+  function startHangman(){
+    current = pickQuestion();
+    guessed = new Set();
+    wrong = 0;
+    document.getElementById('game-clue').textContent = current.clue;
+    document.getElementById('game-status').textContent = '';
+    document.getElementById('game-status').className = 'game-status';
+    const oldRetry = document.querySelector('#screen-game .btn-ghost');
+    if(oldRetry) oldRetry.remove();
+    buildWatchers();
+    buildBlanks();
+    buildKeyboard();
+  }
+
+  // allow physical keyboard input too
+  document.addEventListener('keydown', (e)=>{
+    if(!document.getElementById('screen-game').classList.contains('active')) return;
+    const letter = e.key.toUpperCase();
+    if(letter.length === 1 && letter >= 'A' && letter <= 'Z') guessLetter(letter);
+  });
+
+  document.getElementById('btn-replay').addEventListener('click', ()=>{
+    show('screen-story');
+  });
+
+})();
+</script>
+</body>
+</html>
